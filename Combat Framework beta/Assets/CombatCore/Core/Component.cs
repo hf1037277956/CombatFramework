@@ -91,7 +91,7 @@ namespace EGamePlay
             
         }
 
-        private void Dispose()
+        public void Dispose()
         {
             //if (Entity.EnableLog) Log.Debug($"{GetType().Name}->Dispose");
             Enable = false;

@@ -28,10 +28,19 @@ namespace CombatCore.Core
             return queue.Dequeue();
         }
         
+        public void Recycle<T>(T obj) where T : class
+        {
+            this.Recycle(typeof(T), obj);
+        }
+        
         public void Recycle(object obj)
         {
             Type type = obj.GetType();
-            
+            this.Recycle(type, obj);
+        }
+        
+        private void Recycle(Type type, object obj)
+        {
             if (!_pool.TryGetValue(type, out var queue))
             {
                 queue = new Queue<object>();
