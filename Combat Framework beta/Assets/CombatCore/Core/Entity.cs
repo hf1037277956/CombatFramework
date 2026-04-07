@@ -161,15 +161,15 @@ namespace CombatCore.Core
             }
         }
 
-        // public virtual void Awake()
-        // {
-        //
-        // }
-        //
-        // public virtual void Awake(object initData)
-        // {
-        //
-        // }
+        public virtual void Awake()
+        {
+
+        }
+        
+        public virtual void Awake<T>(T a) 
+        {
+            
+        }
         //
         // public virtual void Start()
         // {
@@ -258,7 +258,14 @@ namespace CombatCore.Core
                 throw new Exception($"entity already has component: {type.FullName}");
             }
             
-            return SetupNewComponent(component);
+            component.Parent = this;
+            component.IsDisposed = false;
+            Components.Add(type, component);
+            //EGamePlay.Entity.Master?.AllComponents.Add(component);
+            
+            component.Awake();
+            
+            return component;
         }
 
         public Component AddComponent(Type type, bool isFromPool = false)
@@ -283,7 +290,14 @@ namespace CombatCore.Core
                 component.IsFromPool = false; 
             }
             
-            return SetupNewComponent(component);;
+            component.Parent = this;
+            component.IsDisposed = false;
+            Components.Add(type, component);
+            //EGamePlay.Entity.Master?.AllComponents.Add(component);
+            
+            component.Awake();
+            
+            return component;
         }
 
         public T AddComponent<T>(bool isFromPool = false) where T : Component
@@ -309,7 +323,14 @@ namespace CombatCore.Core
                 component.IsFromPool = false; 
             }
 
-            return SetupNewComponent(component) as T;
+            component.Parent = this;
+            component.IsDisposed = false;
+            Components.Add(typeof(T), component);
+            //EGamePlay.Entity.Master?.AllComponents.Add(component);
+            
+            component.Awake();
+            
+            return component as T;
         }
 
         public T AddComponent<T, TP1>(TP1 p1, bool isFromPool = false) where T : Component
@@ -335,7 +356,14 @@ namespace CombatCore.Core
                 component.IsFromPool = false; 
             }
 
-            return SetupNewComponent(component) as T;
+            component.Parent = this;
+            component.IsDisposed = false;
+            Components.Add(typeof(T), component);
+            //EGamePlay.Entity.Master?.AllComponents.Add(component);
+            
+            component.Awake(p1);
+            
+            return component as T;
         }
 
         // public K AddComponent<K, P1, P2>(P1 p1, P2 p2, bool isFromPool = false) where K : Entity, IAwake<P1, P2>, new()
@@ -381,19 +409,6 @@ namespace CombatCore.Core
         // -----------------------------------------------------------
         // 内部复用逻辑 
         // -----------------------------------------------------------
-        
-        private T SetupNewComponent<T>(T component) where T : Component
-        {
-            component.Parent = this;
-            component.IsDisposed = false;
-            Components.Add(typeof(T), component);
-            //EGamePlay.Entity.Master?.AllComponents.Add(component);
-            
-            component.Awake();
-            component.Setup();
-            
-            return component;
-        }
 
         public void RemoveComponent<T>() where T : Component
         {
@@ -420,6 +435,7 @@ namespace CombatCore.Core
             entity.Parent = this;
 
             //EventSystem.Instance.Awake(component);
+            entity.Awake();
             return entity as T;
         }
 
@@ -430,6 +446,7 @@ namespace CombatCore.Core
             entity.Parent = this;
 
             //EventSystem.Instance.Awake(component, a);
+            entity.Awake(a);
             return entity as T;
         }
         
@@ -440,6 +457,7 @@ namespace CombatCore.Core
             entity.InstanceId = id;
             entity.Parent = this;
             //EventSystem.Instance.Awake(component);
+            entity.Awake();
             return entity;
         }
         

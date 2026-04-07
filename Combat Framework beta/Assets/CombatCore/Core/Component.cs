@@ -1,20 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using CombatCore.Core.Object;
 
-namespace EGamePlay
+namespace CombatCore.Core
 {
     /// <summary>
     /// 组件：代表某个实体的扩展功能，而不是某种规则
     /// 例如一个技能它有自己的伤害数值类型，但“移动”作为一个功能
     /// 有些技能可能不需要“移动”那么移动则可以抽象为一个组件为需要的技能添加AddComponent
     /// </summary>
-    public class Component
+    public class Component : DisposeObject
     {
-        // 和组件相关的实体
         /// <summary>
         /// 组件的父实体
         /// </summary>
-        public CombatCore.Core.Entity Parent { get; set; }
+        public Entity Parent { get; set; }
         
         public bool IsDisposed { get; set; }
 
@@ -22,11 +22,6 @@ namespace EGamePlay
         
         // 实体的子实体列表
         public Dictionary<long, CombatCore.Core.Entity> Id2Children { get; private set; } = new Dictionary<long, CombatCore.Core.Entity>();
-        
-        /// <summary>
-        /// 定义组件初始化时是否默认启用 
-        /// </summary>
-        public virtual bool DefaultEnable { get; set; } = true;
         
         private bool enable = false;
         
@@ -44,8 +39,8 @@ namespace EGamePlay
                 return enable;
             }
         }
+        
         public bool Disable => enable == false;
-
 
         public T GetParent<T>() where T : CombatCore.Core.Entity
         {
@@ -56,20 +51,10 @@ namespace EGamePlay
         {
 
         }
-
-        public virtual void Awake(object initData)
+        
+        public virtual void Awake<T>(T a) 
         {
-
-        }
-
-        public virtual void Setup()
-        {
-
-        }
-
-        public virtual void Setup(object initData)
-        {
-
+            
         }
 
         public virtual void OnEnable()
@@ -91,9 +76,8 @@ namespace EGamePlay
             
         }
 
-        public void Dispose()
+        public override void Dispose()
         {
-            //if (Entity.EnableLog) Log.Debug($"{GetType().Name}->Dispose");
             Enable = false;
             IsDisposed = true;
 
@@ -103,18 +87,18 @@ namespace EGamePlay
             }
         }
 
-        public static void Destroy(Component entity)
-        {
-            try
-            {
-                entity.OnDestroy();
-            }
-            catch (Exception e)
-            {
-                //Log.Error(e);
-            }
-            entity.Dispose();
-        }
+        // public static void Destroy(Component entity)
+        // {
+        //     try
+        //     {
+        //         entity.OnDestroy();
+        //     }
+        //     catch (Exception e)
+        //     {
+        //         //Log.Error(e);
+        //     }
+        //     entity.Dispose();
+        // }
 
         // public T Publish<T>(T TEvent) where T : class
         // {

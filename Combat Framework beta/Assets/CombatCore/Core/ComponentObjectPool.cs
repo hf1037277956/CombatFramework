@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace EGamePlay
+namespace CombatCore.Core
 {
     public class ComponentObjectPool : IDisposable
     {
