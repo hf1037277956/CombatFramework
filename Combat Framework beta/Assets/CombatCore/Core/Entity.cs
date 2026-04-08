@@ -196,6 +196,22 @@ namespace CombatCore.Core
         //
         // }
         
+        private void RegisterUpdate(Entity entity)
+        {
+            if (entity is IUpdate updateEntity)
+            {
+                UpdateManager.Instance.Register(updateEntity);
+            }
+        }
+        
+        private void RegisterUpdate(Component component)
+        {
+            if (component is IUpdate updateComp)
+            {
+                UpdateManager.Instance.Register(updateComp);
+            }
+        }
+        
         public T GetComponent<T>() where T : Component
         {
             if (this._components == null)
@@ -264,6 +280,8 @@ namespace CombatCore.Core
             //EGamePlay.Entity.Master?.AllComponents.Add(component);
             
             component.Awake();
+
+            RegisterUpdate(component);
             
             return component;
         }
@@ -296,6 +314,8 @@ namespace CombatCore.Core
             //EGamePlay.Entity.Master?.AllComponents.Add(component);
             
             component.Awake();
+            
+            RegisterUpdate(component);
             
             return component;
         }
@@ -330,6 +350,8 @@ namespace CombatCore.Core
             
             component.Awake();
             
+            RegisterUpdate(component);
+            
             return component as T;
         }
 
@@ -362,6 +384,8 @@ namespace CombatCore.Core
             //EGamePlay.Entity.Master?.AllComponents.Add(component);
             
             component.Awake(p1);
+            
+            RegisterUpdate(component);
             
             return component as T;
         }
@@ -425,6 +449,10 @@ namespace CombatCore.Core
         public Entity AddChild(Entity entity)
         {
             entity.Parent = this;
+            entity.Awake();
+            
+            RegisterUpdate(entity);
+            
             return entity;
         }
 
@@ -436,6 +464,9 @@ namespace CombatCore.Core
 
             //EventSystem.Instance.Awake(component);
             entity.Awake();
+
+            RegisterUpdate(entity);
+            
             return entity as T;
         }
 
@@ -447,6 +478,9 @@ namespace CombatCore.Core
 
             //EventSystem.Instance.Awake(component, a);
             entity.Awake(a);
+            
+            RegisterUpdate(entity);
+            
             return entity as T;
         }
         
@@ -458,6 +492,9 @@ namespace CombatCore.Core
             entity.Parent = this;
             //EventSystem.Instance.Awake(component);
             entity.Awake();
+            
+            RegisterUpdate(entity);
+            
             return entity;
         }
         
