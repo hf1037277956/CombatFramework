@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using CombatCore.Core.Object;
 using CombatCore.Core.Singleton;
 
 namespace CombatCore.Core
@@ -19,9 +18,9 @@ namespace CombatCore.Core
         
         public void RegisterComponentUpdate(IUpdate update)
         {
-            if (!_updateEntityList.Contains(update))
+            if (!_updateComponentList.Contains(update))
             {
-                _updateEntityList.Add(update);
+                _updateComponentList.Add(update);
             }
         }
         

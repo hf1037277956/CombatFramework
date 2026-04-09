@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using CombatCore.Core.Object;
 
 namespace CombatCore.Core
@@ -21,26 +20,26 @@ namespace CombatCore.Core
         public bool IsFromPool { get; set; }
         
         // 实体的子实体列表
-        public Dictionary<long, CombatCore.Core.Entity> Id2Children { get; private set; } = new Dictionary<long, CombatCore.Core.Entity>();
+        public Dictionary<long, Entity> Id2Children { get; private set; } = new();
         
-        private bool enable = false;
+        private bool _enable = false;
         
         public bool Enable
         {
             set
             {
-                if (enable == value) return;
-                enable = value;
-                if (enable) OnEnable();
+                if (_enable == value) return;
+                _enable = value;
+                if (_enable) OnEnable();
                 else OnDisable();
             }
             get
             {
-                return enable;
+                return _enable;
             }
         }
         
-        public bool Disable => enable == false;
+        public bool Disable => _enable == false;
 
         public T GetParent<T>() where T : CombatCore.Core.Entity
         {
