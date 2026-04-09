@@ -74,7 +74,7 @@ namespace CombatCore.Core
             }
         }
 
-        public bool IsDisposed => InstanceId == 0;
+        public override bool IsDisposed => InstanceId == 0;
         
         protected Entity _parent;
 
@@ -200,7 +200,7 @@ namespace CombatCore.Core
         {
             if (entity is IUpdate updateEntity)
             {
-                UpdateManager.Instance.Register(updateEntity);
+                UpdateManager.Instance.RegisterEntityUpdate(updateEntity);
             }
         }
         
@@ -208,7 +208,7 @@ namespace CombatCore.Core
         {
             if (component is IUpdate updateComp)
             {
-                UpdateManager.Instance.Register(updateComp);
+                UpdateManager.Instance.RegisterComponentUpdate(updateComp);
             }
         }
         
@@ -227,33 +227,33 @@ namespace CombatCore.Core
             return (T) component;
         }
         
-        public Component GetComponent(Type type)
-        {
-            if (this._components == null)
-            {
-                return null;
-            }
-
-            if (!this._components.TryGetValue(type, out var component))
-            {
-                return null;
-            }
-
-            return component;
-        }
+        // public Component GetComponent(Type type) 
+        // {
+        //     if (this._components == null)
+        //     {
+        //         return null;
+        //     }
+        //
+        //     if (!this._components.TryGetValue(type, out var component))
+        //     {
+        //         return null;
+        //     }
+        //
+        //     return component;
+        // }
         
         // ========================== 创建实体 ==========================
         
-        private static Entity Create(Type type, bool isFromPool)
+        private static T Create<T>(bool isFromPool) where T : Entity, new()
         {
-            Entity entity;
+            T entity;
             if (isFromPool)
             {
-                entity = EntityObjectPool.Instance.Fetch(type);
+                entity = EntityObjectPool.Instance.Fetch<T>();
             }
             else
             {
-                entity = Activator.CreateInstance(type) as Entity; 
+                entity = new T(); 
             }
             
             entity.InstanceId = IdFactory.NewInstanceId();
@@ -263,6 +263,26 @@ namespace CombatCore.Core
             
             return entity;
         }
+        
+        // private static Entity Create(Type type, bool isFromPool)
+        // {
+        //     Entity entity;
+        //     if (isFromPool)
+        //     {
+        //         entity = EntityObjectPool.Instance.Fetch(type);
+        //     }
+        //     else
+        //     {
+        //         entity = Activator.CreateInstance(type) as Entity; 
+        //     }
+        //     
+        //     entity.InstanceId = IdFactory.NewInstanceId();
+        //     entity.IsFromPool = isFromPool;
+        //     entity.IsCreated = true;
+        //     entity.IsNew = true;
+        //     
+        //     return entity;
+        // }
         
         // ========================== 挂载新建组件 ==========================
         
@@ -285,112 +305,70 @@ namespace CombatCore.Core
             
             return component;
         }
-
-        public Component AddComponent(Type type, bool isFromPool = false)
+        
+        public T AddComponent<T>(bool isFromPool = true) where T : Component, new()
         {
+            Type type = typeof(T);
             if (this._components != null && this._components.ContainsKey(type))
             {
                 throw new Exception($"entity already has component: {type.FullName}");
             }
 
-            Component component;
+            T component; 
             if (isFromPool)
             {
-                // 从对象池获取
-                component = ComponentObjectPool.Instance.Fetch(type);
-                component.IsFromPool = true; // 标记来源
+                component = ComponentObjectPool.Instance.Fetch<T>();
+                component.IsFromPool = true;
             }
             else
             {
-                // 强制新建
-                component = Activator.CreateInstance(type) as Component;
-                // 默认不是从池里来的 (如果 Component 类也有 IsFromPool 属性的话，建议显式设为 false)
+                component = new T
+                {
+                    IsFromPool = false
+                };
+            }
+
+            component.Parent = this;
+            component.IsDisposed = false;
+            Components.Add(type, component); 
+            
+            component.Awake();
+            RegisterUpdate(component);
+            
+            return component;
+        }
+        
+        public T AddComponent<T, TP1>(TP1 p1, bool isFromPool = true) where T : Component, new()
+        {
+            Type type = typeof(T);
+            if (this._components != null && this._components.ContainsKey(type))
+            {
+                throw new Exception($"entity already has component: {type.FullName}");
+            }
+
+            T component;
+            if (isFromPool)
+            {
+                component = ComponentObjectPool.Instance.Fetch<T>();
+                component.IsFromPool = true;
+            }
+            else
+            {
+                component = new T();
                 component.IsFromPool = false; 
             }
-            
+
             component.Parent = this;
             component.IsDisposed = false;
             Components.Add(type, component);
-            //EGamePlay.Entity.Master?.AllComponents.Add(component);
             
-            component.Awake();
-            
+            component.Awake(p1);
             RegisterUpdate(component);
             
             return component;
         }
 
-        public T AddComponent<T>(bool isFromPool = false) where T : Component
-        {
-            Type type = typeof (T);
-            if (this._components != null && this._components.ContainsKey(type))
-            {
-                throw new Exception($"entity already has component: {type.FullName}");
-            }
-
-            Component component;
-            if (isFromPool)
-            {
-                // 从对象池获取
-                component = ComponentObjectPool.Instance.Fetch(type);
-                component.IsFromPool = true; // 标记来源
-            }
-            else
-            {
-                // 强制新建
-                component = Activator.CreateInstance(type) as Component;
-                // 默认不是从池里来的 (如果 Component 类也有 IsFromPool 属性的话，建议显式设为 false)
-                component.IsFromPool = false; 
-            }
-
-            component.Parent = this;
-            component.IsDisposed = false;
-            Components.Add(typeof(T), component);
-            //EGamePlay.Entity.Master?.AllComponents.Add(component);
-            
-            component.Awake();
-            
-            RegisterUpdate(component);
-            
-            return component as T;
-        }
-
-        public T AddComponent<T, TP1>(TP1 p1, bool isFromPool = false) where T : Component
-        {
-            Type type = typeof (T);
-            if (this._components != null && this._components.ContainsKey(type))
-            {
-                throw new Exception($"entity already has component: {type.FullName}");
-            }
-
-            Component component;
-            if (isFromPool)
-            {
-                // 从对象池获取
-                component = ComponentObjectPool.Instance.Fetch(type);
-                component.IsFromPool = true; // 标记来源
-            }
-            else
-            {
-                // 强制新建
-                component = Activator.CreateInstance(type) as Component;
-                // 默认不是从池里来的 (如果 Component 类也有 IsFromPool 属性的话，建议显式设为 false)
-                component.IsFromPool = false; 
-            }
-
-            component.Parent = this;
-            component.IsDisposed = false;
-            Components.Add(typeof(T), component);
-            //EGamePlay.Entity.Master?.AllComponents.Add(component);
-            
-            component.Awake(p1);
-            
-            RegisterUpdate(component);
-            
-            return component as T;
-        }
-
-        // public K AddComponent<K, P1, P2>(P1 p1, P2 p2, bool isFromPool = false) where K : Entity, IAwake<P1, P2>, new()
+        // public K AddComponent<K, P1, P2>(P1 p1, P2 p2, bool isFromPool = true) where K : Entity, IAwake<P1, P2>, new()
         // {
         //     Type type = typeof (K);
         //     if (this.components != null && this.components.ContainsKey(type))
@@ -410,7 +388,7 @@ namespace CombatCore.Core
         //     return component as K;
         // }
         //
-        // public K AddComponent<K, P1, P2, P3>(P1 p1, P2 p2, P3 p3, bool isFromPool = false) where K : Entity, IAwake<P1, P2, P3>, new()
+        // public K AddComponent<K, P1, P2, P3>(P1 p1, P2 p2, P3 p3, bool isFromPool = true) where K : Entity, IAwake<P1, P2, P3>, new()
         // {
         //     Type type = typeof (K);
         //     if (this.components != null && this.components.ContainsKey(type))
@@ -445,54 +423,37 @@ namespace CombatCore.Core
         }
         
         // ========================== 挂载新建实体 ==========================
-        
-        public Entity AddChild(Entity entity)
+
+        public T AddChild<T>(bool isFromPool = true) where T : Entity, new()
         {
+            // 路由到泛型的 Create<T> 高速通道，并正确传递 isFromPool
+            var entity = Entity.Create<T>(isFromPool);
             entity.Parent = this;
+
             entity.Awake();
-            
             RegisterUpdate(entity);
             
             return entity;
         }
 
-        public T AddChild<T>(bool isFromPool = false) where T : Entity
+        public T AddChild<T, TA>(TA a, bool isFromPool = true) where T : Entity, new()
         {
-            Type type = typeof (T);
-            var entity = Entity.Create(type, false);
+            var entity = Entity.Create<T>(isFromPool);
             entity.Parent = this;
 
-            //EventSystem.Instance.Awake(component);
-            entity.Awake();
-
-            RegisterUpdate(entity);
-            
-            return entity as T;
-        }
-
-        public T AddChild<T, TA>(TA a, bool isFromPool = false) where T : Entity
-        {
-            Type type = typeof (T);
-            var entity = Entity.Create(type, false);
-            entity.Parent = this;
-
-            //EventSystem.Instance.Awake(component, a);
             entity.Awake(a);
-            
             RegisterUpdate(entity);
             
-            return entity as T;
+            return entity;
         }
         
-        public T AddChildWithId<T>(long id, bool isFromPool = false) where T : Entity
+        public T AddChildWithId<T>(long id, bool isFromPool = true) where T : Entity, new()
         {
-            Type type = typeof (T);
-            T entity = Entity.Create(type, isFromPool) as T;
+            var entity = Entity.Create<T>(isFromPool);
             entity.InstanceId = id;
             entity.Parent = this;
-            //EventSystem.Instance.Awake(component);
+
             entity.Awake();
-            
             RegisterUpdate(entity);
             
             return entity;
@@ -574,44 +535,6 @@ namespace CombatCore.Core
                 ObjectPool.Instance.Recycle(this);
             }
             _status = EntityStatus.None;
-            
-            // // 触发Destroy事件
-            // if (this is IDestroy)
-            // {
-            //     EventSystem.Instance.Destroy(this);
-            // }
-
-            //if (EnableLog) Log.Debug($"{GetType().Name}->Dispose");
-            // 清理自身的子实体
-            // if (Children.Count > 0)
-            // {
-            //     for (int i = Children.Count - 1; i >= 0; i--)
-            //     {
-            //         EGamePlay.Entity.Destroy(Children[i]);
-            //     }
-            //     Children.Clear();
-            //     Type2Children.Clear();
-            // }
-            // // 从父实体中删掉自己
-            // Parent?.RemoveChild(this);
-            // // 清理自身组件
-            // foreach (var component in Components.Values)
-            // {
-            //     component.Enable = false;
-            //     Component.Destroy(component);
-            // }
-            // Components.Clear();
-            //
-            // // ID归零
-            // InstanceId = 0;
-            // parent = null; 
-            //
-            // if (IsFromPool)
-            // {
-            //     EntityObjectPool.Instance.Recycle(this);
-            // }
-            //
-            // EGamePlay.Entity.Master.RemoveEntity(this);
         }
     }
 }

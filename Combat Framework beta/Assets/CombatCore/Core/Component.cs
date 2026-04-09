@@ -15,8 +15,8 @@ namespace CombatCore.Core
         /// 组件的父实体
         /// </summary>
         public Entity Parent { get; set; }
-        
-        public bool IsDisposed { get; set; }
+
+        public override bool IsDisposed => base.IsDisposed;
 
         public bool IsFromPool { get; set; }
         

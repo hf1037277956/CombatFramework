@@ -5,44 +5,40 @@ namespace CombatCore.Core
 {
     public class ComponentObjectPool : IDisposable
     {
-        private readonly Dictionary<Type, Queue<Component>> pool = new Dictionary<Type, Queue<Component>>();
+        private readonly Dictionary<Type, Queue<Component>> _pool = new();
         
-        public static ComponentObjectPool Instance = new ComponentObjectPool();
+        public static readonly ComponentObjectPool Instance = new();
         
-        private ComponentObjectPool()
-        {
-        }
+        private ComponentObjectPool() { }
 
-        public Component Fetch(Type type)
+        public T Fetch<T>() where T : Component, new()
         {
-            Queue<Component> queue = null;
-            if (!pool.TryGetValue(type, out queue))
+            Type type = typeof(T);
+            
+            if (_pool.TryGetValue(type, out var queue) && queue.Count > 0)
             {
-                return Activator.CreateInstance(type) as Component;
+                return queue.Dequeue() as T;
             }
-
-            if (queue.Count == 0)
-            {
-                return Activator.CreateInstance(type) as Component;
-            }
-            return queue.Dequeue();
+            
+            return new T();
         }
 
         public void Recycle(Component obj)
         {
+            if (obj == null) return;
+            
             Type type = obj.GetType();
-            Queue<Component> queue = null;
-            if (!pool.TryGetValue(type, out queue))
+            if (!_pool.TryGetValue(type, out var queue))
             {
                 queue = new Queue<Component>(128);
-                pool.Add(type, queue);
+                _pool.Add(type, queue);
             }
             queue.Enqueue(obj);
         }
 
         public void Dispose()
         {
-            this.pool.Clear();
+            this._pool.Clear();
         }
     }
 }
