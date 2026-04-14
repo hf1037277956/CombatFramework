@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using CombatCore.Core.Object;
-using EGamePlay;
+
 
 namespace CombatCore.Core
 {
@@ -198,18 +198,22 @@ namespace CombatCore.Core
         
         private void RegisterUpdate(Entity entity)
         {
-            if (entity is IUpdate updateEntity)
-            {
-                UpdateManager.Instance.RegisterEntityUpdate(updateEntity);
-            }
+            UpdateManager.Instance.RegisterEntityUpdate(entity);
         }
         
         private void RegisterUpdate(Component component)
         {
-            if (component is IUpdate updateComp)
-            {
-                UpdateManager.Instance.RegisterComponentUpdate(updateComp);
-            }
+            UpdateManager.Instance.RegisterComponentUpdate(component);
+        }
+
+        private void UnregisterUpdate(Entity entity)
+        {
+            UpdateManager.Instance.UnregisterUpdate(entity);
+        }
+        
+        private void UnregisterUpdate(Component component)
+        {
+            UpdateManager.Instance.UnregisterUpdate(component);
         }
         
         public T GetComponent<T>() where T : Component
@@ -412,14 +416,27 @@ namespace CombatCore.Core
         // 内部复用逻辑 
         // -----------------------------------------------------------
 
-        public void RemoveComponent<T>() where T : Component
+        public bool RemoveComponent<T>() where T : Component
         {
-            Components.Remove(typeof(T));
+            if (this._components == null) return false;
+            if (!this._components.TryGetValue(typeof(T), out Component component)) return false;
+
+            this._components.Remove(typeof(T));
+            UnregisterUpdate(component);
+            component.Dispose();
+
+            if (this._components.Count == 0)
+            {
+                ObjectPool.Instance.Recycle(this._components);
+                this._components = null;
+            }
+
+            return true;
         }
 
         public bool HasComponent<T>() where T : Component
         {
-            return Components.TryGetValue(typeof(T), out _);
+            return this._components != null && this._components.TryGetValue(typeof(T), out _);
         }
         
         // ========================== 挂载新建实体 ==========================
@@ -493,6 +510,8 @@ namespace CombatCore.Core
                 return;
             }
 
+            UnregisterUpdate(this);
+
             InstanceId = 0;
 
             // 清理Children
@@ -504,6 +523,7 @@ namespace CombatCore.Core
                 }
 
                 this._children.Clear();
+                // 回收子实体字典对象
                 ObjectPool.Instance.Recycle(this._children);
                 this._children = null;
             }
@@ -513,10 +533,12 @@ namespace CombatCore.Core
             {
                 foreach (KeyValuePair<Type, Component> kv in this._components)
                 {
+                    UnregisterUpdate(kv.Value);
                     kv.Value.Dispose();
                 }
 
                 this._components.Clear();
+                // 回收组件字典对象
                 ObjectPool.Instance.Recycle(this._components);
                 this._components = null;
             }
@@ -528,12 +550,11 @@ namespace CombatCore.Core
 
             this._parent = null;
 
-            base.Dispose();
-            
             if (this.IsFromPool)
             {
-                ObjectPool.Instance.Recycle(this);
+                EntityObjectPool.Instance.Recycle(this);
             }
+
             _status = EntityStatus.None;
         }
     }

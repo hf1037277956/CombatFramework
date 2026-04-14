@@ -1,10 +1,10 @@
 ﻿using System.Threading;
 
-namespace EGamePlay
+namespace CombatCore.Core
 {
     public static class IdFactory
     {
-        public static long _baseId = 0;
+        private static long _baseId = 0;
 
         public static long NewInstanceId()
         {
