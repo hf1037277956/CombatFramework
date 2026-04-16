@@ -11,7 +11,6 @@ namespace CombatCore.Core
         private readonly HashSet<IUpdate> _entityUpdateSet = new HashSet<IUpdate>();
 
 
-
         private readonly List<IUpdate> _updateComponentList = new(100);
 
         private readonly HashSet<IUpdate> _componentUpdateSet = new HashSet<IUpdate>();
