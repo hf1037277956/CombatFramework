@@ -8,11 +8,14 @@ namespace CombatCore.Core
     {
         private readonly Dictionary<Type, Queue<object>> _pool = new();
         
-        public T Fetch<T>() where T: class
+        public T Fetch<T>() where T : class, new()
         {
-            return this.Fetch(typeof (T)) as T;
+            if (!_pool.TryGetValue(typeof(T), out var queue) || queue.Count == 0)
+                return new T();
+
+            return (T)queue.Dequeue();
         }
-        
+
         public object Fetch(Type type)
         {
             if (!_pool.TryGetValue(type, out var queue))

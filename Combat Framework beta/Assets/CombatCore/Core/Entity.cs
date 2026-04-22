@@ -196,26 +196,6 @@ namespace CombatCore.Core
         //
         // }
         
-        private void RegisterUpdate(Entity entity)
-        {
-            UpdateManager.Instance.RegisterEntityUpdate(entity);
-        }
-        
-        private void RegisterUpdate(Component component)
-        {
-            UpdateManager.Instance.RegisterComponentUpdate(component);
-        }
-
-        private void UnregisterUpdate(Entity entity)
-        {
-            UpdateManager.Instance.UnregisterUpdate(entity);
-        }
-        
-        private void UnregisterUpdate(Component component)
-        {
-            UpdateManager.Instance.UnregisterUpdate(component);
-        }
-        
         public T GetComponent<T>() where T : Component
         {
             if (this._components == null)
@@ -301,11 +281,10 @@ namespace CombatCore.Core
             component.Parent = this;
             component.IsDisposed = false;
             Components.Add(type, component);
-            //EGamePlay.Entity.Master?.AllComponents.Add(component);
             
             component.Awake();
 
-            RegisterUpdate(component);
+            EntityCoreNode.Instance.RegisterUpdate(component);
             
             return component;
         }
@@ -337,7 +316,8 @@ namespace CombatCore.Core
             Components.Add(type, component); 
             
             component.Awake();
-            RegisterUpdate(component);
+
+            EntityCoreNode.Instance.RegisterUpdate(component);
             
             return component;
         }
@@ -367,7 +347,8 @@ namespace CombatCore.Core
             Components.Add(type, component);
             
             component.Awake(p1);
-            RegisterUpdate(component);
+            
+            EntityCoreNode.Instance.RegisterUpdate(component);
             
             return component;
         }
@@ -422,7 +403,7 @@ namespace CombatCore.Core
             if (!this._components.TryGetValue(typeof(T), out Component component)) return false;
 
             this._components.Remove(typeof(T));
-            UnregisterUpdate(component);
+            
             component.Dispose();
 
             if (this._components.Count == 0)
@@ -448,7 +429,8 @@ namespace CombatCore.Core
             entity.Parent = this;
 
             entity.Awake();
-            RegisterUpdate(entity);
+
+            EntityCoreNode.Instance.AddEntity(entity);
             
             return entity;
         }
@@ -459,7 +441,8 @@ namespace CombatCore.Core
             entity.Parent = this;
 
             entity.Awake(a);
-            RegisterUpdate(entity);
+
+            EntityCoreNode.Instance.AddEntity(entity);
             
             return entity;
         }
@@ -471,7 +454,8 @@ namespace CombatCore.Core
             entity.Parent = this;
 
             entity.Awake();
-            RegisterUpdate(entity);
+
+            EntityCoreNode.Instance.AddEntity(entity);
             
             return entity;
         }
@@ -510,7 +494,7 @@ namespace CombatCore.Core
                 return;
             }
 
-            UnregisterUpdate(this);
+            EntityCoreNode.Instance.RemoveEntity(this);
 
             InstanceId = 0;
 
@@ -533,7 +517,6 @@ namespace CombatCore.Core
             {
                 foreach (KeyValuePair<Type, Component> kv in this._components)
                 {
-                    UnregisterUpdate(kv.Value);
                     kv.Value.Dispose();
                 }
 
